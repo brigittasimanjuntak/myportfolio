@@ -120,7 +120,7 @@ h1, .brand {
 }
 
 .social-link {
-    display: flex;
+    display: inline-block;
     flex-direction: row;
     gap: 0.5rem;
     justify-content: center;
