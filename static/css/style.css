@@ -126,7 +126,7 @@ h1, .brand {
 }
 
 .social-link {
-    transform: scale(1.15);
+    transform: scale(0.5);
     transition: all 0.3s ease;
     object-fit:cover;
 }
