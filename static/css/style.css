@@ -121,12 +121,12 @@ h1, .brand {
 
 .social-links {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
     flex-wrap: wrap;
 }
 
 .social-link {
-    display: inline-block;
+    display: inline-flex;
     transform: scale(0.20);
     transition: all 0.3s ease;
     object-fit:cover;
