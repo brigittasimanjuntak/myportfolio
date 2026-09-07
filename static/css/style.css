@@ -180,19 +180,19 @@ h1, .brand {
 }
 
 .audio-player {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.5rem 0;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+    padding: 0 1rem;
 }
 
 .audio-player audio {
     width: 100%;
     max-width: 400px;
-    height: 54px;
     border-radius: 30px;
-    background: #f5f0eb;
-    outline: none;
+    display: block;
+    margin: 0 auto;
 }
 
 
