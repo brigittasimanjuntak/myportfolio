@@ -144,29 +144,23 @@ h1, .brand {
 .hero-photo {
     grid-area: photo;
     align-self: center;
-    position: relative;
+    text-align: center; /* Biar gambar di tengah */
 }
 
 .photo-block {
-    position: absolute;
-    top: 1.25rem;
-    left: 1.25rem;
-    width: 100%;
-    height: 100%;
-    background-color: var(--accent);
-    border-radius: var(--radius);
-    z-index: 0;
+    display: none; /* Sembunyiin block orange */
 }
 
 .avatar {
-    position: relative;
-    z-index: 1;
     display: block;
     width: 100%;
+    max-width: 300px;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: var(--radius);
-    border: 3px solid var(--ink);
+    border-radius: 50%; /* Bikin bulat kaya avatar */
+    border: 4px solid var(--accent);
+    margin: 0 auto;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
 .site-footer {
