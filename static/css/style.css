@@ -130,7 +130,7 @@ h1, .brand {
     transform: scale(0.20);
     transition: all 0.3s ease;
     object-fit:cover;
-    padding: 0.5rem 1.1rem;
+    padding: 0.5rem 0.5rem;
     display: inline-block;
 }
 
