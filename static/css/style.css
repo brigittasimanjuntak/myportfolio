@@ -129,6 +129,8 @@ h1, .brand {
     transform: scale(0.25);
     transition: all 0.3s ease;
     object-fit:cover;
+    padding: 0.5rem 1.1rem;
+    display: inline-block;
 }
 
 .social-link:hover {
