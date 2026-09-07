@@ -119,13 +119,14 @@ h1, .brand {
     font-weight: 600;
 }
 
+.social-links {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .social-link {
     display: inline-block;
-    flex-direction: row;
-    gap: 0.5rem;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap; 
     transform: scale(0.20);
     transition: all 0.3s ease;
     object-fit:cover;
