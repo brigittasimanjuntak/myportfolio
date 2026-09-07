@@ -145,7 +145,7 @@ h1, .brand {
 }
 
 .social-link:hover {
-    transform: scale(0.25);
+    transform: scale(20%);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
