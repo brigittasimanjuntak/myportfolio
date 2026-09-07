@@ -164,11 +164,19 @@ h1, .brand {
 }
 
 .audio-wrapper {
+    background-image: url('/static/media/audioplayer.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    position: relative;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin: 2.5rem auto 0;
+    max-width: 550px;
     min-height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
 }
 
 .audio-player {
