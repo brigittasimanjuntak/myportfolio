@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gitta's Portfolio</title>
+    <title>{{ name }} - Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -12,10 +12,10 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">We doodle and vibe, trying our very best 💙</a>
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
             <nav>
-                <a href="#profile">Profile</a>
-                <a href="#skills">Skills</a>
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
             </nav>
         </div>
     </header>
@@ -26,24 +26,24 @@
             <div class="container hero-grid">
                 <div class="hero-identity">
                     <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
-                    <h1>Hello OvO</h1>
+                    <h1>{{ name }}</h1>
                     <h2>· · ────── ꒰ঌ·✦·໒꒱ ────── · ·</h2>
-                    <h2>Brigitta Elissa Rebecca Simanjuntak (She/Her) - ID/EN - Sept 7th</h2>
+                    <h2>(She/Her) - ID/EN - Sept 7th</h2>
                 </div>
                 <div class="hero-photo">
                     <div class="photo-block"></div>
-                    <img class="avatar" src="static/media/gitta.jpeg" alt="Photo of Gitta">
+                    <img class="avatar" src="static/media/gitta.jpeg" alt="Photo of {{ name }}">
                 </div>
                 <div class="hero-details">
-                    <p class="bio">I'm an IS student from Universitas Indonesia. I have deep passion in visual design and user experience, aiming to create comfortable and appealing digital experiences.</p>
+                    <p class="bio">{{ bio }}</p>
                     <dl class="meta-list">
                         <div class="meta-row">
                             <dt>NPM</dt>
-                            <dd>2506601855</dd>
+                            <dd>{{ npm }}</dd>
                         </div>
                         <div class="meta-row">
                             <dt>Program</dt>
-                            <dd>Information Systems</dd>
+                            <dd>{{ study_program }}</dd>
                         </div>
                     </dl>
                     <div class="social-links">
@@ -96,7 +96,7 @@
 
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 Faculty of Computer Science, Universitas Indonesia.</p>
+            <p>&copy; {{name}} 2026 Faculty of Computer Science, Universitas Indonesia.</p>
         </div>
     </footer>
 </body>
