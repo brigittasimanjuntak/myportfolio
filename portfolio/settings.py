@@ -93,6 +93,7 @@ if PRODUCTION:
             }
         }
     }
+    
 else:
     DATABASES = {
         'default': {
