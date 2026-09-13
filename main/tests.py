@@ -75,13 +75,13 @@ class CreativeSpaceTest(TestCase):
 
     def test_creative_space_url_is_accessible(self):
         """Test 1: URL bisa diakses dan pake template yang tepat."""
-        response = self.client.get(reverse("main:show_creative_space"))
+        response = self.client.get(reverse("main:show_creativespace"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "creativespace.html")
 
     def test_artwork_appears_on_page(self):
         """Test 2: Data model muncul di HTML ketika ada data."""
-        response = self.client.get(reverse("main:show_creative_space"))
+        response = self.client.get(reverse("main:show_creativespace"))
         self.assertContains(response, self.artwork.title)
         self.assertContains(response, self.artwork.description)
         self.assertContains(response, "Digital Art")
@@ -89,5 +89,5 @@ class CreativeSpaceTest(TestCase):
     def test_empty_creative_space_page(self):
         """Test 3: Halaman nampilin pesan kosong ketika belum ada data."""
         CreativeSpace.objects.all().delete()
-        response = self.client.get(reverse("main:show_creative_space"))
+        response = self.client.get(reverse("main:show_creativespace"))
         self.assertContains(response, "No artwork has been added yet")
