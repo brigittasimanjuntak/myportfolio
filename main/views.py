@@ -22,9 +22,9 @@ def show_experience(request):
     }
     return render(request, "experience.html", context)
 
-def show_creative_space(request):
+def show_creativespace(request):
     context = {
         "name": "Brigitta",
         "artwork_list": CreativeSpace.objects.all().order_by("-created_at"),
     }
-    return render(request, "creative_space.html", context)
+    return render(request, "creativespace.html", context)
