@@ -31,3 +31,31 @@ class Experience(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+class CreativeSpace(models.Model):
+    MEDIUM_CHOICES = [
+        ("digital-art", "Digital Art"),
+        ("traditional", "Traditional Art"),
+        ("sketch", "Sketch"),
+        ("3d-model", "3D Model"),
+        ("photography", "Photography"),
+        ("other", "Other"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    image = models.URLField(blank=True, null=True)  # ← pake URL dulu biar gampang
+    medium = models.CharField(
+        max_length=20,
+        choices=MEDIUM_CHOICES,
+        default="digital-art",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_ongoing(self):
+        return self.ended_at is None

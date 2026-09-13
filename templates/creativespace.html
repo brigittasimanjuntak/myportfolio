@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} - Creative Space</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
+            <nav>
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+                <a href="{% url 'main:show_creative_space' %}">Creative Space</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="creative-section" id="creative-space">
+            <div class="container">
+                <p class="section-kicker">My digital canvas</p>
+                <h1>Creative Space</h1>
+
+                <div class="creative-grid">
+                    {% for artwork in artwork_list %}
+                        <article class="creative-card">
+                            {% if artwork.image %}
+                                <img src="{{ artwork.image }}" alt="{{ artwork.title }}" class="creative-image">
+                            {% endif %}
+                            <div class="creative-info">
+                                <span class="creative-category">
+                                    {{ artwork.get_medium_display }}
+                                </span>
+                                <h2>{{ artwork.title }}</h2>
+                                {% if artwork.description %}
+                                    <p class="creative-description">
+                                        {{ artwork.description }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">
+                            No artwork has been added yet. Stay tuned! 🎨
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; {{ name }} 2026 Faculty of Computer Science, Universitas Indonesia.</p>
+        </div>
+    </footer>
+</body>
+</html>
