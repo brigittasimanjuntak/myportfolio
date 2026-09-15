@@ -1,5 +1,3 @@
-# main/admin.py
-
 from django.contrib import admin
 from main.models import Experience, CreativeSpace
 

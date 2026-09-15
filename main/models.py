@@ -55,7 +55,7 @@ class CreativeSpace(models.Model):
 
     def __str__(self):
         return self.title
-    
+
     @property
     def is_ongoing(self):
         return self.ended_at is None
