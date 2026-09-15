@@ -1,6 +1,9 @@
-from django.shortcuts import render
+from django.contrib import messages
+from django.core import serializers
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 
-from main.models import CreativeSpace, Experience
+from main.models import CreativeSpace, Experience, CreativeSpaceForm
 
 
 def show_main(request):
@@ -29,3 +32,17 @@ def show_creative_space(request):
         "artwork_list": CreativeSpace.objects.all().order_by("-created_at"),
     }
     return render(request, "creative_space.html", context)
+
+def create_creative_space(request):
+    form = CreativeSpaceForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Congrats! New artwork has been added!")
+        return redirect("main:show_creative_space")
+
+    context = {
+        "name": "Brigitta",
+        "form": form,
+    }
+    return render(request, "creative_space_form.html", context)
