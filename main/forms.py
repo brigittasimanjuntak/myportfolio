@@ -24,7 +24,7 @@ class CreativeSpaceForm(ModelForm):
         widgets = {
             "title": TextInput(
                 attrs={
-                    "placeholder": "Portfolio Website",
+                    "placeholder": "Your Artwork Title Here!",
                     "maxlength": 255,
                 }
             ),
