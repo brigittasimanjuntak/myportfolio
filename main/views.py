@@ -28,9 +28,20 @@ def show_experience(request):
     return render(request, "experience.html", context)
 
 def show_creative_space(request):
+    json_response = get_creativespaces_json(request)
+    
+    raw_objects = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    artworks = [obj.object for obj in raw_objects]
+    
+    title_query = request.GET.get("title", "").strip()
+    
     context = {
         "name": "Brigitta",
-        "artwork_list": CreativeSpace.objects.all().order_by("-created_at"),
+        "artwork_list": artworks,
+        "title_query": title_query,
     }
     return render(request, "creativespace.html", context)
 
@@ -47,3 +58,23 @@ def create_creative_space(request):
         "form": form,
     }
     return render(request, "creativespaceform.html", context)
+
+def delete_creative_space(request, creative_space_id):
+    creative_space = get_object_or_404(CreativeSpace, pk=creative_space_id)
+
+    if request.method == "POST":
+        creative_space.delete()
+        messages.success(request, "Artwork deleted!")
+        return redirect("main:show_creative_space")
+
+    return redirect("main:show_creative_space")
+
+def get_creativespaces_json(request):
+    title_query = request.GET.get("title", "").strip()
+    creativespaces = CreativeSpace.objects.all()
+
+    if title_query:
+        creativespaces = creativespaces.filter(title__icontains=title_query)
+
+    creativespaces_json = serializers.serialize("json", creativespaces)
+    return HttpResponse(creativespaces_json, content_type="application/json")

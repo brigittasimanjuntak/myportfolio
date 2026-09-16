@@ -1,0 +1,43 @@
+<p class="experience-status">
+    <button type="button"
+            class="button button-danger"
+            popovertarget="delete-creativespace-{{ artwork.id }}"
+            aria-label="Hapus {{ artwork.title }}"
+            title="Hapus artwork">
+        Hapus Artwork
+    </button>
+</p>
+<div id="delete-creativespace-{{ artwork.id }}"
+     class="creativespace-delete-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="delete-creativespace-title-{{ artwork.id }}">
+    <button type="button"
+            class="creativespace-delete-modal__backdrop"
+            popovertarget="delete-creativespace-{{ artwork.id }}"
+            popovertargetaction="hide"
+            aria-label="Tutup konfirmasi hapus"></button>
+    <div class="creativespace-delete-modal__content">
+        <button type="button"
+                class="creativespace-delete-modal__close"
+                popovertarget="delete-creativespace-{{ artwork.id }}"
+                popovertargetaction="hide"
+                aria-label="Tutup konfirmasi hapus">×</button>
+        <h2 id="delete-creativespace-title-{{ artwork.id }}">Hapus Artwork?</h2>
+        <p>
+            Apakah Anda yakin ingin menghapus
+            <strong>{{ artwork.title }}</strong>?
+        </p>
+        <div class="creativespace-delete-modal__actions">
+            <button type="button"
+                    class="button button-secondary"
+                    popovertarget="delete-creativespace-{{ artwork.id }}"
+                    popovertargetaction="hide">Batal</button>
+            <form method="post" action="{% url 'main:delete_creativespace' artwork.id %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-danger">Ya, Hapus</button>
+            </form>
+        </div>
+    </div>
+</div>
