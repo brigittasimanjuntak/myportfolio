@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "brigitta-elissa-myportfolio.pws.cs.ui.ac.id"]
 
-PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
+PRODUCTION = os.getenv('PRODUCTION', 'True').lower() == 'true'
 
 
 # Application definition
