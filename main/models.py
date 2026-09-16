@@ -45,6 +45,7 @@ class CreativeSpace(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    artist = models.CharField(max_length=255, blank=True, null=True)
     image = models.URLField(blank=True, null=True)  # ← pake URL dulu biar gampang
     medium = models.CharField(
         max_length=20,

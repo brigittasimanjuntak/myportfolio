@@ -21,6 +21,7 @@
                                     {{ artwork.get_medium_display }}
                                 </span>
                                 <h2>{{ artwork.title }}</h2>
+                                <p class="creative-artist">🎨 by {{ artwork.artist }}</p>
                                 {% if artwork.description %}
                                     <p class="creative-description">
                                         {{ artwork.description }}
@@ -30,7 +31,7 @@
                         </article>
                     {% empty %}
                         <p class="empty-state">
-                            No artwork has been added yet. Stay tuned! 🎨
+                            NOOO,,, No artwork available :/
                         </p>
                     {% endfor %}
                 </div>

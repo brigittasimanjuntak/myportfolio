@@ -11,6 +11,6 @@ class ExperienceAdmin(admin.ModelAdmin):
 
 @admin.register(CreativeSpace)
 class CreativeSpaceAdmin(admin.ModelAdmin):
-    list_display = ("title", "medium", "created_at")
-    list_filter = ("medium",)
-    search_fields = ("title", "description")
+    list_display = ("title", "medium", "created_at", "artist")
+    list_filter = ("medium", "artist")
+    search_fields = ("title", "description", "artist")

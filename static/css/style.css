@@ -171,6 +171,83 @@ h1, .brand {
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
+/* ===== CREATIVE SPACE SECTION ===== */
+.creative-section {
+    padding: 4rem 0 5rem;
+    border-top: 1px solid var(--line);
+}
+
+.creative-section h1 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0.4rem 0 2rem;
+    color: var(--ink);
+}
+
+.creative-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.creative-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.creative-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    border-color: var(--accent);
+}
+
+.creative-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+    border-bottom: 1px solid var(--line);
+    background-color: var(--line);
+}
+
+.creative-info {
+    padding: 1.25rem;
+}
+
+.creative-category {
+    color: var(--accent-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.creative-card h2 {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    color: var(--ink);
+}
+
+.creative-artist {
+    font-size: 0.85rem;
+    color: var(--accent-dark);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.creative-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 .audio-wrapper {
     background-image: url('/static/media/audioplayer.png');
     background-size: cover;
@@ -203,78 +280,6 @@ h1, .brand {
     margin: 0 auto;
 }
 
-/* ===== SKILLS SECTION ===== */
-.skills-section {
-    padding: 5rem 0 6rem;
-    border-top: 1px solid var(--line);
-    background-color: #fcf9f5; /* sedikit sentuhan berbeda dari paper */
-}
-
-.skills-header {
-    text-align: center;
-    margin-bottom: 3.5rem;
-}
-
-.skills-title {
-    font-family: "Space Grotesk", -apple-system, sans-serif;
-    font-size: clamp(2.2rem, 5vw, 3.4rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin-bottom: 0.5rem;
-}
-
-.skills-subtitle {
-    font-size: 1.1rem;
-    color: var(--text-muted);
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 2rem;
-}
-
-.skill-card {
-    background: var(--paper);
-    padding: 2rem 1.5rem 1.8rem;
-    border-radius: var(--radius);
-    border: 1px solid var(--line);
-    transition: transform 0.2s ease, box-shadow 0.25s ease;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-}
-
-.skill-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
-    border-color: var(--accent);
-}
-
-.skill-icon {
-    font-size: 2.8rem;
-    line-height: 1.2;
-    margin-bottom: 0.75rem;
-    display: block;
-}
-
-.skill-name {
-    font-family: "Space Grotesk", -apple-system, sans-serif;
-    font-weight: 700;
-    font-size: 1.25rem;
-    letter-spacing: -0.01em;
-    margin-bottom: 0.4rem;
-    color: var(--ink);
-}
-
-.skill-desc {
-    font-size: 0.92rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    margin: 0;
-}
 
 .experience-section {
     padding: 4rem 0;

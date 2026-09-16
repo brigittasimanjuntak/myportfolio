@@ -1,4 +1,4 @@
-from django.forms import ModelForm, TextInput, Textarea, URLInput
+from django.forms import ModelForm, Select, TextInput, Textarea, URLInput
 
 from main.models import CreativeSpace
 
@@ -8,17 +8,17 @@ class CreativeSpaceForm(ModelForm):
         fields = [
             "title",
             "description",
+            "artist",
             "medium",
-            "artist_url",
-            "art_url",
+            "image",
         ]
 
         labels = {
             "title": "Title",
             "description": "Description",
+            "artist": "Artist",
             "medium": "Art Medium",
-            "artist_url": "Artist Credit",
-            "art_url": "Your artwork URL",
+            "image": "Artwork URL",
         }
 
         widgets = {
@@ -34,17 +34,13 @@ class CreativeSpaceForm(ModelForm):
                     "rows": 3,
                 }
             ),
-            "medium": TextInput(
+            "medium": Select(),
+            "artist": TextInput(
                 attrs={
-                    "placeholder": "Please specify the medium of your art (e.g., digital-art, traditional, sketch, 3d-model, photography, other)",
+                    "placeholder": "Enter the artist's name!",
                 }
             ),
-            "artist_url": URLInput(
-                attrs={
-                    "placeholder": "Credit the artist if it's not your own artwork!",
-                }
-            ),
-            "art_url": URLInput(
+            "image": URLInput(
                 attrs={
                     "placeholder": "Place your artwork URL here!",
                 }

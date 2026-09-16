@@ -3,7 +3,8 @@ from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from main.models import CreativeSpace, Experience, CreativeSpaceForm
+from main.forms import CreativeSpaceForm
+from main.models import CreativeSpace, Experience
 
 
 def show_main(request):
@@ -31,7 +32,7 @@ def show_creative_space(request):
         "name": "Brigitta",
         "artwork_list": CreativeSpace.objects.all().order_by("-created_at"),
     }
-    return render(request, "creative_space.html", context)
+    return render(request, "creativespace.html", context)
 
 def create_creative_space(request):
     form = CreativeSpaceForm(request.POST or None)
