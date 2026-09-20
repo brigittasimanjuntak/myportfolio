@@ -27,6 +27,10 @@
                                         {{ artwork.description }}
                                     </p>
                                 {% endif %}
+                                <div class="creative-actions">
+                                <a href="{% url 'main:update_creative_space' artwork.id %}" class="button button-secondary">
+                                    ✏️ Edit </a>
+                                </div>
                             </div>
                         {% include "components/creativespace_delete_modal.html" %}
                         </article>
