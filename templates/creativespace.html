@@ -9,7 +9,25 @@
             <div class="container">
                 <p class="section-kicker">My digital canvas</p>
                 <h2>Creative Space</h2>
+                <form method="get" class="creative-search">
+                <input 
+                    type="text" 
+                    name="title" 
+                    placeholder="🔍 Cari artwork..." 
+                    value="{{ title_query }}"
+                    class="creative-search__input"
+                >
+                <button type="submit" class="button">Cari</button>
+                {% if title_query %}
+                    <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
+                {% endif %}
+            </form>
 
+            {% if title_query %}
+                <p class="search-result-info">
+                    Hasil pencarian untuk: <strong>"{{ title_query }}"</strong>
+                </p>
+            {% endif %}
                 <div class="creative-grid">
                     {% for artwork in artwork_list %}
                         <article class="creative-card">
