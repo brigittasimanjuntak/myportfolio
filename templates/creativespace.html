@@ -13,11 +13,11 @@
                 <input 
                     type="text" 
                     name="title" 
-                    placeholder="🔍 Cari artwork..." 
+                    placeholder="🔍 Artwork Search" 
                     value="{{ title_query }}"
                     class="creative-search__input"
                 >
-                <button type="submit" class="button">Cari</button>
+                <button type="submit" class="button">Search!</button>
                 {% if title_query %}
                     <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
                 {% endif %}
@@ -25,7 +25,7 @@
 
             {% if title_query %}
                 <p class="search-result-info">
-                    Hasil pencarian untuk: <strong>"{{ title_query }}"</strong>
+                    Search result for: <strong>"{{ title_query }}"</strong>
                 </p>
             {% endif %}
                 <div class="creative-grid">
