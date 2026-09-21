@@ -78,3 +78,22 @@ def get_creativespaces_json(request):
 
     creativespaces_json = serializers.serialize("json", creativespaces)
     return HttpResponse(creativespaces_json, content_type="application/json")
+
+def update_creative_space(request, creative_space_id):
+    artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
+
+    if request.method == "POST":
+        form = CreativeSpaceForm(request.POST, instance=artwork)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Artwork updated!")
+            return redirect("main:show_creative_space")
+    else:
+        form = CreativeSpaceForm(instance=artwork)
+
+    context = {
+        "name": "Brigitta",
+        "form": form,
+        "artwork": artwork,
+    }
+    return render(request, "creativespaceform.html", context)
