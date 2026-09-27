@@ -19,7 +19,9 @@
                 >
                 <button type="submit" class="button">Search!</button>
                 {% if title_query %}
+                {% if user.is_superuser %}
                     <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
+                {% endif %}  
                 {% endif %}
             </form>
 
@@ -46,11 +48,14 @@
                                     </p>
                                 {% endif %}
                                 <div class="creative-actions">
+                                {% include "components/toggle_star.html" %}
+                                {% if user.is_superuser %}
                                 <a href="{% url 'main:update_creative_space' artwork.id %}" class="button button-secondary">
                                     ✏️ Edit </a>
+                                {% include "components/creativespace_delete_modal.html" %}
+                                {% endif %}  
                                 </div>
                             </div>
-                        {% include "components/creativespace_delete_modal.html" %}
                         </article>
                     {% empty %}
                         <p class="empty-state">

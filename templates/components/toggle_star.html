@@ -1,0 +1,10 @@
+<form method="post" action="{% url 'main:toggle_star' artwork.id %}" class="star-form">
+    {% csrf_token %}
+    <button type="submit"
+            class="button button-star{% if user in artwork.starred_by.all %} is-starred{% endif %}"
+            title="{% if artwork.starred_by.all %}Starred by {{ artwork.starred_by.all|join:', ' }}{% else %}GIVE IT A STAR!{% endif %}">
+        <span aria-hidden="true">★</span>
+        {% if user in artwork.starred_by.all %}Unstar{% else %}Star{% endif %}
+        <span class="star-count">{{ artwork.starred_by.count }}</span>
+    </button>
+</form>
