@@ -49,11 +49,15 @@
                                 {% endif %}
                                 <div class="creative-actions">
                                 {% include "components/toggle_star.html" %}
-                                {% if user.is_superuser %}
+                                {% if perms.main.update_creative_space %}
                                 <a href="{% url 'main:update_creative_space' artwork.id %}" class="button button-secondary">
                                     ✏️ Edit </a>
+                                {% endif %}
+
+                                {% if perms.main.delete_creative_space %}
                                 {% include "components/creativespace_delete_modal.html" %}
                                 {% endif %}  
+                                
                                 </div>
                             </div>
                         </article>

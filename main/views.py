@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.decorators import login_required  
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied        
 import datetime
 
@@ -53,6 +53,7 @@ def show_creative_space(request):
     return render(request, "creativespace.html", context)
 
 @login_required(login_url="/login/")
+@permission_required("main.create_creative_space", raise_exception=True)
 def create_creative_space(request):
     form = CreativeSpaceForm(request.POST or None)
 
@@ -68,6 +69,7 @@ def create_creative_space(request):
     return render(request, "creativespaceform.html", context)
 
 @login_required(login_url="/login/")
+@permission_required("main.delete_creative_space", raise_exception=True)
 def delete_creative_space(request, creative_space_id):
     creative_space = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
@@ -89,6 +91,7 @@ def get_creativespaces_json(request):
     return HttpResponse(creativespaces_json, content_type="application/json")
 
 @login_required(login_url="/login/")
+@permission_required("main.update_creative_space", raise_exception=True)
 def update_creative_space(request, creative_space_id):
     artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
