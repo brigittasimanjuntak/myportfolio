@@ -10,6 +10,44 @@
     <link rel="stylesheet" href="/static/css/style.css">
     {% block meta %} {% endblock meta %}
 </head>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const cards = document.querySelectorAll(".eeveelution-card");
+        const audioCache = {};  // Cache audio biar gak load ulang tiap hover
+
+        cards.forEach(card => {
+            const soundUrl = card.dataset.sound;
+            if (!soundUrl) return;
+
+            // Pre-load audio (biar pas hover langsung bunyi)
+            if (!audioCache[soundUrl]) {
+                const audio = new Audio(soundUrl);
+                audio.preload = "auto";
+                audio.volume = 0.5;  // Atur volume (0.0 - 1.0)
+                audioCache[soundUrl] = audio;
+            }
+
+            // Pas mouse masuk → play
+            card.addEventListener("mouseenter", () => {
+                const audio = audioCache[soundUrl];
+                audio.currentTime = 0;  // Reset biar bisa diputer ulang
+                audio.play().catch(err => {
+                    // Browser kadang blokir autoplay kalo user belom interaksi
+                    console.log("Audio play blocked:", err);
+                });
+            });
+
+            // Pas mouse keluar → stop (opsional)
+            card.addEventListener("mouseleave", () => {
+                const audio = audioCache[soundUrl];
+                audio.pause();
+                audio.currentTime = 0;
+            });
+        });
+    });
+</script>
+
 <body>
   <header class="site-header">
     <div class="container">

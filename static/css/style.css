@@ -553,6 +553,97 @@ h1, .brand {
     border-top: 1px solid var(--line);
 }
 
+/* ===== EEVEELUTION SECTION ===== */
+.eeveelution-section {
+    padding: 3rem 0 4rem;
+    border-top: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--paper) 0%, #f5ede2 100%);
+}
+
+.eeveelution-section h2 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin: 0.4rem 0 0.5rem;
+}
+
+.section-desc {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+
+.eeveelution-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    justify-content: center;
+}
+
+.eeveelution-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--ink);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    image-rendering: pixelated;  /* Biar pixel art tetep tajam */
+}
+
+.eeveelution-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    background: white;
+    box-shadow: 0 12px 24px rgba(217, 93, 57, 0.15);
+}
+
+.eeveelution-sprite {
+    width: 96px;
+    height: 96px;
+    image-rendering: pixelated;  /* PENTING: pixel art gak blur */
+    image-rendering: crisp-edges;
+    transition: transform 0.25s ease;
+}
+
+.eeveelution-card:hover .eeveelution-sprite {
+    transform: scale(1.15) rotate(-3deg);
+    animation: bounce 0.6s ease infinite alternate;
+}
+
+.eeveelution-name {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    transition: color 0.25s ease;
+}
+
+.eeveelution-card:hover .eeveelution-name {
+    color: var(--accent);
+}
+
+@keyframes bounce {
+    from { transform: scale(1.15) translateY(0); }
+    to   { transform: scale(1.15) translateY(-4px); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .eeveelution-sprite {
+        width: 72px;
+        height: 72px;
+    }
+    .eeveelution-grid {
+        gap: 0.75rem;
+    }
+}
+
 @media (max-width: 600px) {
     .hero-grid {
         grid-template-columns: 1fr;
