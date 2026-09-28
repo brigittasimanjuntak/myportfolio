@@ -553,14 +553,14 @@ h1, .brand {
     border-top: 1px solid var(--line);
 }
 
-/* ===== EEVEELUTION SECTION ===== */
-.eeveelution-section {
+/* ===== POKEMON SECTION ===== */
+.pokemon-section {
     padding: 3rem 0 4rem;
     border-top: 1px solid var(--line);
     background: linear-gradient(180deg, var(--paper) 0%, #f5ede2 100%);
 }
 
-.eeveelution-section h2 {
+.pokemon-section h2 {
     font-family: "Space Grotesk", -apple-system, sans-serif;
     font-size: clamp(1.8rem, 4vw, 2.5rem);
     font-weight: 700;
@@ -573,14 +573,16 @@ h1, .brand {
     font-size: 0.95rem;
 }
 
-.eeveelution-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    justify-content: center;
+.pokemon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    justify-items: center;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.eeveelution-card {
+.pokemon-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -594,27 +596,27 @@ h1, .brand {
     image-rendering: pixelated;  /* Biar pixel art tetep tajam */
 }
 
-.eeveelution-card:hover {
+.pokemon-card:hover {
     transform: translateY(-6px);
     border-color: var(--accent);
     background: white;
     box-shadow: 0 12px 24px rgba(217, 93, 57, 0.15);
 }
 
-.eeveelution-sprite {
+.pokemon-sprite {
     width: 96px;
     height: 96px;
-    image-rendering: pixelated;  /* PENTING: pixel art gak blur */
+    image-rendering: pixelated;
     image-rendering: crisp-edges;
     transition: transform 0.25s ease;
 }
 
-.eeveelution-card:hover .eeveelution-sprite {
+.pokemon-card:hover .pokemon-sprite {
     transform: scale(1.15) rotate(-3deg);
     animation: bounce 0.6s ease infinite alternate;
 }
 
-.eeveelution-name {
+.pokemon-name {
     margin-top: 0.5rem;
     font-size: 0.8rem;
     font-weight: 600;
@@ -624,7 +626,7 @@ h1, .brand {
     transition: color 0.25s ease;
 }
 
-.eeveelution-card:hover .eeveelution-name {
+.pokemon-card:hover .pokemon-name {
     color: var(--accent);
 }
 
@@ -635,11 +637,11 @@ h1, .brand {
 
 /* Responsive */
 @media (max-width: 600px) {
-    .eeveelution-sprite {
+    .pokemon-sprite {
         width: 72px;
         height: 72px;
     }
-    .eeveelution-grid {
+    .pokemon-grid {
         gap: 0.75rem;
     }
 }
