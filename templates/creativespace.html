@@ -18,58 +18,214 @@
                     class="creative-search__input"
                 >
                 <button type="submit" class="button">Search!</button>
-                <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Project berhasil dimuat dengan baik!', 'success')">
-                Toast Tasty...</button>
-                {% if title_query %}
-                {% if user.is_superuser %}
-                    <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
-                {% endif %}  
-                {% endif %}
-            </form>
-
-            {% if title_query %}
-                <p class="search-result-info">
-                    Search result for: <strong>"{{ title_query }}"</strong>
-                </p>
-            {% endif %}
-                <div class="creative-grid">
-                    {% for artwork in artwork_list %}
-                        <article class="creative-card">
-                            {% if artwork.image %}
-                                <img src="{{ artwork.image }}" alt="{{ artwork.title }}" class="creative-image">
-                            {% endif %}
-                            <div class="creative-info">
-                                <span class="creative-category">
-                                    {{ artwork.get_medium_display }}
-                                </span>
-                                <h2>{{ artwork.title }}</h2>
-                                <p class="creative-artist">🎨 by {{ artwork.artist }}</p>
-                                {% if artwork.description %}
-                                    <p class="creative-description">
-                                        {{ artwork.description }}
-                                    </p>
-                                {% endif %}
-                                <div class="creative-actions">
-                                {% include "components/toggle_star.html" %}
-                                {% if perms.main.update_creative_space %}
-                                <a href="{% url 'main:update_creative_space' artwork.id %}" class="button button-secondary">
-                                    ✏️ Edit </a>
-                                {% endif %}
-
-                                {% if perms.main.delete_creative_space %}
-                                {% include "components/creativespace_delete_modal.html" %}
-                                {% endif %}  
-                                
-                                </div>
-                            </div>
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">
-                            NOOO,,, No artwork available :/
-                        </p>
-                    {% endfor %}
+<!-- Loading State -->
+                <div id="loading" class="empty-state hide">
+                    <p>Memuat artworks...</p>
                 </div>
+
+                <!-- Error State -->
+                <div id="error" class="empty-state hide">
+                    <p>Gagal memuat data artworks. Silakan coba lagi.</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide">
+                    <p>NOOO,,, No artwork available :/</p>
+                </div>
+
+                <!-- Grid container — JS yang isi -->
+                <div id="grid" class="creative-grid hide"></div>
             </div>
         </section>
     </main>
+
+    <script>
+    // Konfigurasi
+    const BASE_CREATIVESPACE_ENDPOINT = "{% url 'main:get_creative_spaces_json' %}";
+    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+    const HAS_ADD_PERM = "{{ perms.main.add_creativespace|yesno:'true,false' }}" === "true";
+    const HAS_CHANGE_PERM = "{{ perms.main.change_creativespace|yesno:'true,false' }}" === "true";
+    const HAS_DELETE_PERM = "{{ perms.main.delete_creativespace|yesno:'true,false' }}" === "true";
+
+    let abortController;
+    let searchDebounceTimer;
+
+    // Elemen DOM
+    const loadingState = document.getElementById('loading');
+    const errorState = document.getElementById('error');
+    const emptyState = document.getElementById('empty');
+    const gridContainer = document.getElementById('grid');
+    const searchForm = document.getElementById('creativespace-search-form');
+    const searchInput = document.getElementById('search-input');
+
+    // Helper: escape HTML (XSS protection)
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // Helper: baca CSRF cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+
+    // Show/hide section
+    function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+        loadingState.classList.toggle('hide', !showLoading);
+        errorState.classList.toggle('hide', !showError);
+        emptyState.classList.toggle('hide', !showEmpty);
+        gridContainer.classList.toggle('hide', !showGrid);
+    }
+
+    // Build card element
+    function buildArtworkCardElement(item) {
+        const artworkId = item.id;
+
+        const articleElement = document.createElement('article');
+        articleElement.className = 'creative-card';
+
+        const imageHtml = item.image
+            ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="creative-image">`
+            : '';
+
+        const descriptionHtml = item.description
+            ? `<p class="creative-description">${escapeHtml(item.description)}</p>`
+            : '';
+
+        // URL pake dummy UUID, diganti sama ID asli
+        const editUrl = HAS_CHANGE_PERM
+            ? "{% url 'main:update_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId)
+            : '';
+        const deleteUrl = HAS_DELETE_PERM
+            ? "{% url 'main:delete_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId)
+            : '';
+        const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId);
+
+        // Tombol Edit
+        const editHtml = HAS_CHANGE_PERM
+            ? `<a href="${editUrl}" class="button button-secondary">✏️ Edit</a>`
+            : '';
+
+        // Tombol Delete — modal inline
+        const deleteHtml = HAS_DELETE_PERM
+            ? `<button type="button" class="button button-danger" popovertarget="delete-modal-${artworkId}">🗑️ Delete</button>
+               <div id="delete-modal-${artworkId}" class="creativespace-delete-modal" popover="auto">
+                   <div class="creativespace-delete-modal__content">
+                       <button type="button" class="creativespace-delete-modal__close" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">×</button>
+                       <h2>Delete Artwork</h2>
+                       <p>Are you sure you want to delete <strong>${escapeHtml(item.title)}</strong>?</p>
+                       <div class="creativespace-delete-modal__actions">
+                           <button type="button" class="button button-secondary" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">Cancel</button>
+                           <form method="post" action="${deleteUrl}" style="display:inline;">
+                               <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                               <button type="submit" class="button button-danger">Confirm</button>
+                           </form>
+                       </div>
+                   </div>
+               </div>`
+            : '';
+
+        // Tombol Star
+        const isStarredClass = item.is_starred ? ' is-starred' : '';
+        const starText = item.is_starred ? 'Unstar' : 'Star';
+        const starTitle = item.star_count > 0
+            ? `Starred by ${escapeHtml(item.starred_by_names)}`
+            : 'GIVE IT A STAR!';
+
+        const starHtml = `
+            <form method="post" action="${starUrl}" class="star-form">
+                <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
+                    <span aria-hidden="true">★</span>
+                    ${starText}
+                    <span class="star-count">${item.star_count}</span>
+                </button>
+            </form>
+        `;
+
+        articleElement.innerHTML = `
+            ${imageHtml}
+            <div class="creative-info">
+                <span class="creative-category">${escapeHtml(item.medium)}</span>
+                <h2>${escapeHtml(item.title)}</h2>
+                <p class="creative-artist">🎨 by ${escapeHtml(item.artist)}</p>
+                ${descriptionHtml}
+                <div class="creative-actions">
+                    ${starHtml}
+                    ${editHtml}
+                    ${deleteHtml}
+                </div>
+            </div>
+        `;
+
+        return articleElement;
+    }
+
+    // Fetch data
+    async function fetchCreativeSpaces(searchQuery = "") {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
+
+        try {
+            displayPageSection({ showLoading: true });
+
+            const url = searchQuery
+                ? `${BASE_CREATIVESPACE_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
+                : BASE_CREATIVESPACE_ENDPOINT;
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: abortController.signal,
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch data');
+
+            const data = await response.json();
+
+            if (data.length === 0) {
+                displayPageSection({ showEmpty: true });
+            } else {
+                gridContainer.innerHTML = '';
+                data.forEach(item => {
+                    gridContainer.appendChild(buildArtworkCardElement(item));
+                });
+                displayPageSection({ showGrid: true });
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Error loading creative spaces:', error);
+            displayPageSection({ showError: true });
+        }
+    }
+
+    // Search dengan debounce
+    const SEARCH_DEBOUNCE_DELAY = 300;
+
+    function searchCreativeSpaces() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            fetchCreativeSpaces(searchInput.value.trim());
+        }, SEARCH_DEBOUNCE_DELAY);
+    }
+
+    // Event handlers
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        fetchCreativeSpaces(searchInput.value.trim());
+    });
+
+    searchInput.addEventListener('input', searchCreativeSpaces);
+
+    // Start
+    fetchCreativeSpaces(searchInput.value.trim());
+    </script>
 {% endblock content %}
