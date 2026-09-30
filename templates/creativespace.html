@@ -18,6 +18,8 @@
                     class="creative-search__input"
                 >
                 <button type="submit" class="button">Search!</button>
+                <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Project berhasil dimuat dengan baik!', 'success')">
+                Toast Tasty...</button>
                 {% if title_query %}
                 {% if user.is_superuser %}
                     <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
