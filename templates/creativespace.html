@@ -34,6 +34,15 @@
                     <p>NOOOO!!! No artwork available :/</p>
                 </div>
 
+                <!-- django messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="django-message" data-type="{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
                 <!-- Grid container — JS yang isi -->
                 <div id="grid" class="creative-grid hide"></div>
             </div>
@@ -41,6 +50,19 @@
     </main>
 
     <script>
+    // django messages → toast
+    document.addEventListener('DOMContentLoaded', function() {
+    const messages = document.querySelectorAll('.django-message');
+    messages.forEach((msg, index) => {
+        const text = msg.textContent.trim();
+        const type = msg.dataset.type || 'normal';
+
+        // Delay biar gak tabrakan
+        setTimeout(() => {
+            showToast('Notification', text, type);
+        }, index * 400);
+            });
+        });
     // Konfigurasi
     const BASE_CREATIVESPACE_ENDPOINT = "{% url 'main:get_creative_spaces_json' %}";
     const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
