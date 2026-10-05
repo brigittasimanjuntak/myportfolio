@@ -378,6 +378,10 @@ h1, .brand {
     color: var(--accent-dark);
 }
 
+.hide {
+    display: none !important;
+}
+
 .star-form {
     display: inline;
 }
