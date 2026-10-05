@@ -42,6 +42,7 @@ def show_creative_space(request):
     context = {
         "name": "Brigitta",
         "title_query": title_query,
+        "form": CreativeSpaceForm(),
     }
     return render(request, "creativespace.html", context)
 
@@ -164,7 +165,7 @@ def login_user(request):
         return response
 
     context = {
-        "name": "Burhan",
+        "name": "Brigitta",
         "form": form,
     }
     return render(request, "login.html", context)
