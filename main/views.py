@@ -6,7 +6,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied  
-from django.http import JsonResponse      
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST      
 import datetime
 
 from main.forms import CreativeSpaceForm
@@ -57,6 +58,7 @@ def create_creative_space(request):
     context = {
         "name": "Brigitta",
         "form": form,
+        "form": CreativeSpaceForm(),
     }
     return render(request, "creativespaceform.html", context)
 
@@ -172,3 +174,38 @@ def logout_user(request):
     response = redirect("main:show_main")
     response.delete_cookie('last_login')
     return response
+
+@require_POST
+def create_creative_space_ajax(request):
+    # Cek login + permission manual, biar balikin JSON bukan redirect
+    if not request.user.is_authenticated or not request.user.has_perm("main.add_creativespace"):
+        return JsonResponse({"status": "error", "message": "Forbidden"}, status=403)
+
+    form = CreativeSpaceForm(request.POST)
+
+    if form.is_valid():
+        artwork = form.save()
+        return JsonResponse({
+            "status": "success",
+            "message": "Artwork berhasil ditambahkan!",
+            "id": str(artwork.id),
+        }, status=201)
+
+    return JsonResponse({
+        "status": "error",
+        "errors": form.errors.get_json_data(),
+    }, status=400)
+
+@require_POST
+def delete_creative_space_ajax(request, creative_space_id):
+    if not request.user.is_authenticated or not request.user.has_perm("main.delete_creativespace"):
+        return JsonResponse({"status": "error", "message": "Forbidden"}, status=403)
+
+    artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
+    title = artwork.title
+    artwork.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "message": f'Artwork "{title}" berhasil dihapus!',
+    })

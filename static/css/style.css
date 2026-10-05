@@ -317,6 +317,19 @@ h1, .brand {
     margin-bottom: 1.5rem;
 }
 
+.creative-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.creative-header h2 {
+    margin: 0;
+}
+
 /* Tombol close (×) */
 .creativespace-delete-modal__close {
     position: absolute;

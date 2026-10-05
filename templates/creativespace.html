@@ -9,6 +9,16 @@
             <div class="container">
                 <p class="section-kicker">My digital canvas</p>
                 <h2>Creative Space</h2>
+                <div class="creative-header">
+                    <h2>Creative Space</h2>
+                    {% if perms.main.add_creativespace %}
+                        <button type="button"
+                                class="button"
+                                popovertarget="add-creativespace-modal">
+                            + Add Artwork
+                        </button>
+                    {% endif %}
+                </div>
                 <form method="get" class="creative-search", id="creativespace-search-form">
                 <input
                     type="search"
@@ -47,6 +57,9 @@
                 <div id="grid" class="creative-grid hide"></div>
             </div>
         </section>
+        {% if perms.main.add_creativespace %}
+            {% include "components/creativespace_form_modal.html" %}
+        {% endif %}
     </main>
 
     <script>
@@ -139,22 +152,19 @@
 
         // Tombol Delete — modal inline
         const deleteHtml = HAS_DELETE_PERM
-            ? `<button type="button" class="button button-danger" popovertarget="delete-modal-${artworkId}">🗑️ Delete</button>
-               <div id="delete-modal-${artworkId}" class="creativespace-delete-modal" popover="auto">
-                   <div class="creativespace-delete-modal__content">
-                       <button type="button" class="creativespace-delete-modal__close" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">×</button>
-                       <h2>Delete Artwork</h2>
-                       <p>Are you sure you want to delete <strong>${escapeHtml(item.title)}</strong>?</p>
-                       <div class="creativespace-delete-modal__actions">
-                           <button type="button" class="button button-secondary" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">Cancel</button>
-                           <form method="post" action="${deleteUrl}" style="display:inline;">
-                               <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
-                               <button type="submit" class="button button-danger">Confirm</button>
-                           </form>
-                       </div>
-                   </div>
-               </div>`
-            : '';
+        ? `<button type="button" class="button button-danger" popovertarget="delete-modal-${artworkId}">🗑️ Delete</button>
+        <div id="delete-modal-${artworkId}" class="creativespace-delete-modal" popover="auto">
+            <div class="creativespace-delete-modal__content">
+                <button type="button" class="creativespace-delete-modal__close" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">×</button>
+                <h2>Delete Artwork</h2>
+                <p>Are you sure you want to delete <strong>${escapeHtml(item.title)}</strong>?</p>
+                <div class="creativespace-delete-modal__actions">
+                    <button type="button" class="button button-secondary" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">Cancel</button>
+                    <button type="button" class="button button-danger" data-delete-id="${artworkId}">Confirm</button>    <!-- ✅ BUTTON BIASA -->
+                </div>
+            </div>
+        </div>`
+        : '';
 
         // Tombol Star
         const isStarredClass = item.is_starred ? ' is-starred' : '';
@@ -192,6 +202,44 @@
         return articleElement;
     }
 
+    // HANDLE DELETE BUTTON CLICK
+    gridContainer.addEventListener('click', async function(e) {
+    const deleteBtn = e.target.closest('[data-delete-id]');
+    if (!deleteBtn) return;
+
+    const artworkId = deleteBtn.dataset.deleteId;
+
+    // Disable tombol biar gak double klik
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Deleting...';
+
+    try {
+        const deleteUrl = `/creative-space/${artworkId}/delete-ajax/`;
+        const response = await fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('Deleted!', data.message, 'success');
+            // Refresh grid tanpa reload
+            fetchCreativeSpaces(searchInput.value.trim());
+        } else {
+            showToast('Gagal', data.message || 'Gagal menghapus artwork', 'error');
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Confirm';
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        showToast('Error', 'Terjadi kesalahan jaringan', 'error');
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Confirm';
+    }
+    });
     // Fetch data
     async function fetchCreativeSpaces(searchQuery = "") {
         if (abortController) abortController.abort();
@@ -227,6 +275,59 @@
             console.error('Error loading creative spaces:', error);
             displayPageSection({ showError: true });
         }
+    }
+
+    // FORM SUBMIT AJAX
+    const addArtworkForm = document.getElementById('add-artwork-form');
+    if (addArtworkForm) {
+        addArtworkForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = addArtworkForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const formData = new FormData(addArtworkForm);
+                const response = await fetch("{% url 'main:create_creative_space_ajax' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Tutup modal
+                    document.getElementById('add-creativespace-modal').hidePopover();
+                    addArtworkForm.reset();
+
+                    // Toast success
+                    showToast('Success!', data.message, 'success');
+
+                    // Refresh grid
+                    fetchCreativeSpaces(searchInput.value.trim());
+                } else {
+                    // Tampilin error validasi
+                    let errMsg = data.message || 'Validasi gagal';
+                    if (data.errors) {
+                        const firstErr = Object.values(data.errors)[0];
+                        if (Array.isArray(firstErr) && firstErr[0]?.message) {
+                            errMsg = firstErr[0].message;
+                        }
+                    }
+                    showToast('Gagal', errMsg, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error', 'Terjadi kesalahan jaringan', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Artwork!';
+            }
+        });
     }
 
     // Search dengan debounce

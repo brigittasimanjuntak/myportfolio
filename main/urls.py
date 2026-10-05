@@ -11,6 +11,8 @@ from main.views import (
     show_main,
     update_creative_space,
     toggle_star,
+    create_creative_space_ajax,
+    delete_creative_space_ajax,
 )
 
 app_name = "main"
@@ -27,4 +29,6 @@ urlpatterns = [
     path("register/", register, name="register"),
     path("logout/", logout_user, name="logout"),
     path("creative-space/<uuid:creative_space_id>/star/", toggle_star, name="toggle_star"),
+    path("creative-space/add-ajax/", create_creative_space_ajax, name="create_creative_space_ajax"),
+    path("creative-space/<uuid:creative_space_id>/delete-ajax/", delete_creative_space_ajax, name="delete_creative_space_ajax"),
 ]
