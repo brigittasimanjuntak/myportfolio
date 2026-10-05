@@ -9,28 +9,29 @@
             <div class="container">
                 <p class="section-kicker">My digital canvas</p>
                 <h2>Creative Space</h2>
-                <form method="get" class="creative-search">
+                <form method="get" class="creative-search", id="creativespace-search-form">
                 <input
-                    type="text"
+                    type="search"
                     name="title"
+                    id="search-input"
                     placeholder="🔍 Artwork Search"
                     value="{{ title_query }}"
                     class="creative-search__input"
                 >
-                <button type="submit" class="button">Search!</button>
-<!-- Loading State -->
+                <button type="submit" class="button">Search!</button> </form>
+                <!-- Loading State -->
                 <div id="loading" class="empty-state hide">
-                    <p>Memuat artworks...</p>
+                    <p>Rumaging through artworks...</p>
                 </div>
 
                 <!-- Error State -->
                 <div id="error" class="empty-state hide">
-                    <p>Gagal memuat data artworks. Silakan coba lagi.</p>
+                    <p>We can't fetch the artworks...</p>
                 </div>
 
                 <!-- Empty State -->
                 <div id="empty" class="empty-state hide">
-                    <p>NOOO,,, No artwork available :/</p>
+                    <p>NOOOO!!! No artwork available :/</p>
                 </div>
 
                 <!-- Grid container — JS yang isi -->

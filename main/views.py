@@ -45,7 +45,7 @@ def show_creative_space(request):
     return render(request, "creativespace.html", context)
 
 @login_required(login_url="/login/")
-@permission_required("main.create_creative_space", raise_exception=True)
+@permission_required("main.add_creativespace", raise_exception=True) 
 def create_creative_space(request):
     form = CreativeSpaceForm(request.POST or None)
 
@@ -61,7 +61,7 @@ def create_creative_space(request):
     return render(request, "creativespaceform.html", context)
 
 @login_required(login_url="/login/")
-@permission_required("main.delete_creative_space", raise_exception=True)
+@permission_required("main.delete_creativespace", raise_exception=True)
 def delete_creative_space(request, creative_space_id):
     creative_space = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
@@ -87,26 +87,23 @@ def get_creativespaces_json(request):
         starred_by_names = ", ".join([u.username for u in starred_users])
 
         data.append({
-            "pk": str(artwork.id),
-            "fields": {
-                "title": artwork.title,
-                "description": artwork.description,
-                "artist": artwork.artist,
-                "medium": artwork.medium,
-                "get_medium_display": artwork.get_medium_display(),
-                "image": artwork.image,
-                "created_at": artwork.created_at.isoformat(),
-                "star_count": starred_users.count(),
-                "is_starred": is_starred,
-                "starred_by_names": starred_by_names,
-            }
-        })
+            "id": str(artwork.id),             
+            "title": artwork.title,
+            "description": artwork.description,
+            "artist": artwork.artist,
+            "medium": artwork.get_medium_display(),   
+            "image": artwork.image,
+            "created_at": artwork.created_at.isoformat(),
+            "star_count": starred_users.count(),
+            "is_starred": is_starred,
+            "starred_by_names": starred_by_names,
+            })
 
     return JsonResponse(data, safe=False)
 
 
 @login_required(login_url="/login/")
-@permission_required("main.update_creative_space", raise_exception=True)
+@permission_required("main.change_creativespace", raise_exception=True)
 def update_creative_space(request, creative_space_id):
     artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
