@@ -64,6 +64,12 @@ h1, .brand {
     padding: 4.5rem 0 5rem;
 }
 
+.hero-name {
+    display: flex;     
+    align-items: center;
+    gap: 1rem;
+}
+
 .hero-grid {
     display: grid;
     grid-template-columns: 1.3fr 1fr;
