@@ -95,6 +95,55 @@ h1, .brand {
     line-height: 0.95;
 }
 
+.pokemon-companion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+    image-rendering: pixelated;
+}
+
+.pokemon-companion__sprite {
+    width: 96px;
+    height: 96px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    transition: transform 0.25s ease, filter 0.25s ease;
+    filter: drop-shadow(0 4px 8px rgba(217, 93, 57, 0.2));
+}
+
+/* Hover: dragonair naik + glow */
+.pokemon-companion:hover .pokemon-companion__sprite {
+    transform: translateY(-6px) scale(1.15);
+    filter: drop-shadow(0 8px 20px rgba(217, 93, 57, 0.45));
+    animation: dragonair-bounce 0.8s ease-in-out infinite alternate;
+}
+
+.pokemon-companion:active {
+    transform: scale(0.95);
+}
+
+@keyframes dragonair-bounce {
+    from { transform: translateY(-6px) scale(1.15); }
+    to   { transform: translateY(-10px) scale(1.15); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .hero-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .pokemon-companion__sprite {
+        width: 72px;
+        height: 72px;
+    }
+}
+
+
 .bio {
     color: var(--text-muted);
     max-width: 480px;
