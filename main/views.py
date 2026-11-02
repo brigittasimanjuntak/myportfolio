@@ -5,7 +5,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.exceptions import PermissionDenied        
+from django.core.exceptions import PermissionDenied  
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST      
 import datetime
 
 from main.forms import CreativeSpaceForm
@@ -35,25 +37,17 @@ def show_experience(request):
     return render(request, "experience.html", context)
 
 def show_creative_space(request):
-    json_response = get_creativespaces_json(request)
-    
-    raw_objects = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    artworks = [obj.object for obj in raw_objects]
-    
     title_query = request.GET.get("title", "").strip()
-    
+
     context = {
         "name": "Brigitta",
-        "artwork_list": artworks,
         "title_query": title_query,
+        "form": CreativeSpaceForm(),
     }
     return render(request, "creativespace.html", context)
 
 @login_required(login_url="/login/")
-@permission_required("main.create_creative_space", raise_exception=True)
+@permission_required("main.add_creativespace", raise_exception=True) 
 def create_creative_space(request):
     form = CreativeSpaceForm(request.POST or None)
 
@@ -65,11 +59,12 @@ def create_creative_space(request):
     context = {
         "name": "Brigitta",
         "form": form,
+        "form": CreativeSpaceForm(),
     }
     return render(request, "creativespaceform.html", context)
 
 @login_required(login_url="/login/")
-@permission_required("main.delete_creative_space", raise_exception=True)
+@permission_required("main.delete_creativespace", raise_exception=True)
 def delete_creative_space(request, creative_space_id):
     creative_space = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
@@ -82,16 +77,36 @@ def delete_creative_space(request, creative_space_id):
 
 def get_creativespaces_json(request):
     title_query = request.GET.get("title", "").strip()
-    creativespaces = CreativeSpace.objects.all()
+    artworks = CreativeSpace.objects.prefetch_related('starred_by').all()
 
     if title_query:
-        creativespaces = creativespaces.filter(title__icontains=title_query)
+        artworks = artworks.filter(title__icontains=title_query)
 
-    creativespaces_json = serializers.serialize("json", creativespaces)
-    return HttpResponse(creativespaces_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for artwork in artworks:
+        starred_users = artwork.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "id": str(artwork.id),             
+            "title": artwork.title,
+            "description": artwork.description,
+            "artist": artwork.artist,
+            "medium": artwork.get_medium_display(),   
+            "image": artwork.image,
+            "created_at": artwork.created_at.isoformat(),
+            "star_count": starred_users.count(),
+            "is_starred": is_starred,
+            "starred_by_names": starred_by_names,
+            })
+
+    return JsonResponse(data, safe=False)
+
 
 @login_required(login_url="/login/")
-@permission_required("main.update_creative_space", raise_exception=True)
+@permission_required("main.change_creativespace", raise_exception=True)
 def update_creative_space(request, creative_space_id):
     artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
 
@@ -150,7 +165,7 @@ def login_user(request):
         return response
 
     context = {
-        "name": "Burhan",
+        "name": "Brigitta",
         "form": form,
     }
     return render(request, "login.html", context)
@@ -160,3 +175,38 @@ def logout_user(request):
     response = redirect("main:show_main")
     response.delete_cookie('last_login')
     return response
+
+@require_POST
+def create_creative_space_ajax(request):
+    # Cek login + permission manual, biar balikin JSON bukan redirect
+    if not request.user.is_authenticated or not request.user.has_perm("main.add_creativespace"):
+        return JsonResponse({"status": "error", "message": "Forbidden"}, status=403)
+
+    form = CreativeSpaceForm(request.POST)
+
+    if form.is_valid():
+        artwork = form.save()
+        return JsonResponse({
+            "status": "success",
+            "message": "Artwork berhasil ditambahkan!",
+            "id": str(artwork.id),
+        }, status=201)
+
+    return JsonResponse({
+        "status": "error",
+        "errors": form.errors.get_json_data(),
+    }, status=400)
+
+@require_POST
+def delete_creative_space_ajax(request, creative_space_id):
+    if not request.user.is_authenticated or not request.user.has_perm("main.delete_creativespace"):
+        return JsonResponse({"status": "error", "message": "Forbidden"}, status=403)
+
+    artwork = get_object_or_404(CreativeSpace, pk=creative_space_id)
+    title = artwork.title
+    artwork.delete()
+
+    return JsonResponse({
+        "status": "success",
+        "message": f'Artwork "{title}" berhasil dihapus!',
+    })

@@ -8,66 +8,300 @@
         <section class="creative-section" id="creative-space">
             <div class="container">
                 <p class="section-kicker">My digital canvas</p>
-                <h2>Creative Space</h2>
-                <form method="get" class="creative-search">
+                <div class="creative-header">
+                    <h2>Creative Space</h2>
+                    {% if perms.main.add_creativespace %}
+                        <button type="button"
+                                class="button"
+                                popovertarget="add-creativespace-modal">
+                            + Add Artwork
+                        </button>
+                    {% endif %}
+                </div>
+                <form method="get" class="creative-search", id="creativespace-search-form">
                 <input
-                    type="text"
+                    type="search"
                     name="title"
+                    id="search-input"
                     placeholder="🔍 Artwork Search"
                     value="{{ title_query }}"
                     class="creative-search__input"
                 >
-                <button type="submit" class="button">Search!</button>
-                {% if title_query %}
-                {% if user.is_superuser %}
-                    <a href="{% url 'main:show_creative_space' %}" class="button button-secondary">Reset</a>
-                {% endif %}  
-                {% endif %}
-            </form>
-
-            {% if title_query %}
-                <p class="search-result-info">
-                    Search result for: <strong>"{{ title_query }}"</strong>
-                </p>
-            {% endif %}
-                <div class="creative-grid">
-                    {% for artwork in artwork_list %}
-                        <article class="creative-card">
-                            {% if artwork.image %}
-                                <img src="{{ artwork.image }}" alt="{{ artwork.title }}" class="creative-image">
-                            {% endif %}
-                            <div class="creative-info">
-                                <span class="creative-category">
-                                    {{ artwork.get_medium_display }}
-                                </span>
-                                <h2>{{ artwork.title }}</h2>
-                                <p class="creative-artist">🎨 by {{ artwork.artist }}</p>
-                                {% if artwork.description %}
-                                    <p class="creative-description">
-                                        {{ artwork.description }}
-                                    </p>
-                                {% endif %}
-                                <div class="creative-actions">
-                                {% include "components/toggle_star.html" %}
-                                {% if perms.main.update_creative_space %}
-                                <a href="{% url 'main:update_creative_space' artwork.id %}" class="button button-secondary">
-                                    ✏️ Edit </a>
-                                {% endif %}
-
-                                {% if perms.main.delete_creative_space %}
-                                {% include "components/creativespace_delete_modal.html" %}
-                                {% endif %}  
-                                
-                                </div>
-                            </div>
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">
-                            NOOO,,, No artwork available :/
-                        </p>
-                    {% endfor %}
+                <button type="submit" class="button">Search!</button> </form>
+                <!-- Loading State -->
+                <div id="loading" class="empty-state hide">
+                    <p>Rumaging through artworks...</p>
                 </div>
+
+                <!-- Error State -->
+                <div id="error" class="empty-state hide">
+                    <p>We can't fetch the artworks...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide">
+                    <p>NOOOO!!! No artwork available :/</p>
+                </div>
+
+                <!-- django messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="django-message" data-type="{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Grid container — JS yang isi -->
+                <div id="grid" class="creative-grid hide"></div>
             </div>
         </section>
+        {% if perms.main.add_creativespace %}
+            {% include "components/creativespace_form_modal.html" %}
+        {% endif %}
     </main>
+
+    {% csrf_token %} 
+    
+    <script>
+    // ==========================================
+    // 1. KONFIGURASI ENDPOINT
+    // ==========================================
+    const BASE_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-list' %}";
+    const DETAIL_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-detail' '00000000-0000-0000-0000-000000000000' %}";
+    const STAR_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-star' '00000000-0000-0000-0000-000000000000' %}";
+
+    const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+    const HAS_ADD_PERM = "{{ perms.main.add_creativespace|yesno:'true,false' }}" === "true";
+    const HAS_CHANGE_PERM = "{{ perms.main.change_creativespace|yesno:'true,false' }}" === "true";
+    const HAS_DELETE_PERM = "{{ perms.main.delete_creativespace|yesno:'true,false' }}" === "true";
+
+    // ==========================================
+    // 2. ELEMEN DOM & STATE
+    // ==========================================
+    const loadingState = document.getElementById('loading');
+    const errorState = document.getElementById('error');
+    const emptyState = document.getElementById('empty');
+    const gridContainer = document.getElementById('grid');
+    const searchForm = document.getElementById('creativespace-search-form');
+    const searchInput = document.getElementById('search-input');
+    const addArtworkForm = document.getElementById('add-artwork-form');
+
+    let abortController;
+    let searchDebounceTimer;
+
+    // ==========================================
+    // 3. HELPER FUNCTIONS
+    // ==========================================
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function replaceUuid(pattern, id) {
+        return pattern.replace('00000000-0000-0000-0000-000000000000', id);
+    }
+
+    function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+        loadingState.classList.toggle('hide', !showLoading);
+        errorState.classList.toggle('hide', !showError);
+        emptyState.classList.toggle('hide', !showEmpty);
+        gridContainer.classList.toggle('hide', !showGrid);
+    }
+
+    function apiErrorMessage(data, status) {
+        const messages = Object.values(data).flat().filter(v => typeof v === 'string');
+        return messages.join(' ') || `Request failed (HTTP ${status})`;
+    }
+
+    // ==========================================
+    // 4. BUILD CARD HTML
+    // ==========================================
+    function buildArtworkCardElement(artwork) {
+        const article = document.createElement('article');
+        article.className = 'creative-card';
+
+        const imageHtml = artwork.image
+            ? `<img src="${escapeHtml(artwork.image)}" alt="${escapeHtml(artwork.title)}" class="creative-image">`
+            : '';
+
+        const descHtml = artwork.description
+            ? `<p class="creative-description">${escapeHtml(artwork.description)}</p>`
+            : '';
+
+        // Tombol Star (Kalo login)
+        const starHtml = IS_AUTHENTICATED
+            ? `<button type="button" class="button button-star${artwork.is_starred ? ' is-starred' : ''}" data-action="star" data-id="${escapeHtml(artwork.id)}" title="${escapeHtml(artwork.starred_by_names)}">
+                   <span aria-hidden="true">★</span> ${artwork.is_starred ? 'Unstar' : 'Star'} <span class="star-count">${artwork.star_count}</span>
+               </button>`
+            : `<a href="{% url 'main:login' %}" class="button button-star">Login to Star (${artwork.star_count})</a>`;
+
+        // Tombol Edit & Delete
+        const editHtml = HAS_CHANGE_PERM
+            ? `<a href="{% url 'main:update_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artwork.id) class="button button-secondary">✏️ Edit</a>`
+            : '';
+            
+        const deleteHtml = HAS_DELETE_PERM
+            ? `<button type="button" class="button button-danger" data-action="delete" data-id="${escapeHtml(artwork.id)}">🗑️ Delete</button>`
+            : '';
+
+        article.innerHTML = `
+            ${imageHtml}
+            <div class="creative-info">
+                <span class="creative-category">${escapeHtml(artwork.medium_display)}</span>
+                <h2>${escapeHtml(artwork.title)}</h2>
+                <p class="creative-artist">🎨 by ${escapeHtml(artwork.artist)}</p>
+                ${descHtml}
+                <div class="creative-actions">
+                    ${starHtml}
+                    ${editHtml}
+                    ${deleteHtml}
+                </div>
+            </div>
+        `;
+        return article;
+    }
+
+    // ==========================================
+    // 5. FETCH DATA (GET)
+    // ==========================================
+    async function fetchCreativeSpaces(searchQuery = '') {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
+
+        try {
+            displayPageSection({ showLoading: true });
+
+            const url = new URL(BASE_CREATIVESPACE_ENDPOINT, window.location.origin);
+            if (searchQuery) url.searchParams.set('title', searchQuery);
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: abortController.signal,
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            
+            // Karena data dari DRF itu langsung array objek, bukan {fields: ...} lagi
+            gridContainer.replaceChildren(...data.map(buildArtworkCardElement));
+            displayPageSection({ showGrid: data.length > 0, showEmpty: data.length === 0 });
+            
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error(error);
+            displayPageSection({ showError: true });
+        }
+    }
+
+    // ==========================================
+    // 6. WRITE DATA (POST / PATCH / DELETE)
+    // ==========================================
+    async function writeData(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: payload === undefined ? undefined : JSON.stringify(payload),
+        });
+
+        if (response.status === 204) return null;
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+        return data;
+    }
+
+    // ==========================================
+    // 7. EVENT LISTENER: ADD FORM
+    // ==========================================
+    if (addArtworkForm) {
+        addArtworkForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = addArtworkForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const formData = new FormData(addArtworkForm);
+                // Ambil data dari form jadi object
+                const payload = Object.fromEntries(['title', 'description', 'artist', 'medium', 'image'].map(name => [name, formData.get(name)]));
+
+                await writeData(BASE_CREATIVESPACE_ENDPOINT, 'POST', payload);
+
+                addArtworkForm.reset();
+                document.getElementById('add-creativespace-modal').hidePopover();
+                showToast('Success!', 'Artwork berhasil ditambahkan!', 'success');
+                
+                fetchCreativeSpaces(searchInput.value.trim());
+            } catch (error) {
+                showToast('Gagal', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Artwork!';
+            }
+        });
+    }
+
+    // ==========================================
+    // 8. EVENT LISTENER: STAR & DELETE (Event Delegation)
+    // ==========================================
+    gridContainer.addEventListener('click', async function(e) {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn || btn.disabled) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+
+        if (action === 'delete' && !confirm('Yakin ingin menghapus artwork ini?')) return;
+        
+        btn.disabled = true;
+
+        try {
+            if (action === 'star') {
+                await writeData(replaceUuid(STAR_CREATIVESPACE_ENDPOINT, id), 'POST');
+                showToast('Success', 'Star berhasil diupdate!', 'success');
+            } else if (action === 'delete') {
+                await writeData(replaceUuid(DETAIL_CREATIVESPACE_ENDPOINT, id), 'DELETE');
+                showToast('Deleted!', 'Artwork berhasil dihapus.', 'success');
+            }
+            fetchCreativeSpaces(searchInput.value.trim());
+        } catch (error) {
+            showToast('Error', error.message, 'error');
+            btn.disabled = false;
+        }
+    });
+
+    // ==========================================
+    // 9. EVENT LISTENER: SEARCH DEBOUNCE
+    // ==========================================
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => fetchCreativeSpaces(searchInput.value.trim()), 300);
+    });
+
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        fetchCreativeSpaces(searchInput.value.trim());
+    });
+
+    // Start!
+    fetchCreativeSpaces(searchInput.value.trim());
+    </script>
 {% endblock content %}
