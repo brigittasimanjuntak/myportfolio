@@ -61,58 +61,58 @@
         {% endif %}
     </main>
 
+    {% csrf_token %} 
+    
     <script>
-    // django messages → toast
-    document.addEventListener('DOMContentLoaded', function() {
-    const messages = document.querySelectorAll('.django-message');
-    messages.forEach((msg, index) => {
-        const text = msg.textContent.trim();
-        const type = msg.dataset.type || 'normal';
+    // ==========================================
+    // 1. KONFIGURASI ENDPOINT
+    // ==========================================
+    const BASE_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-list' %}";
+    const DETAIL_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-detail' '00000000-0000-0000-0000-000000000000' %}";
+    const STAR_CREATIVESPACE_ENDPOINT = "{% url 'api:creativespace-star' '00000000-0000-0000-0000-000000000000' %}";
 
-        // Delay biar gak tabrakan
-        setTimeout(() => {
-            showToast('Notification', text, type);
-        }, index * 400);
-            });
-        });
-    // Konfigurasi
-    const BASE_CREATIVESPACE_ENDPOINT = "{% url 'main:get_creative_spaces_json' %}";
-    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+    const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
     const HAS_ADD_PERM = "{{ perms.main.add_creativespace|yesno:'true,false' }}" === "true";
     const HAS_CHANGE_PERM = "{{ perms.main.change_creativespace|yesno:'true,false' }}" === "true";
     const HAS_DELETE_PERM = "{{ perms.main.delete_creativespace|yesno:'true,false' }}" === "true";
 
-    let abortController;
-    let searchDebounceTimer;
-
-    // Elemen DOM
+    // ==========================================
+    // 2. ELEMEN DOM & STATE
+    // ==========================================
     const loadingState = document.getElementById('loading');
     const errorState = document.getElementById('error');
     const emptyState = document.getElementById('empty');
     const gridContainer = document.getElementById('grid');
     const searchForm = document.getElementById('creativespace-search-form');
     const searchInput = document.getElementById('search-input');
+    const addArtworkForm = document.getElementById('add-artwork-form');
 
-    // Helper: escape HTML (XSS protection)
-    function escapeHtml(str) {
-        if (str === null || str === undefined) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
+    let abortController;
+    let searchDebounceTimer;
 
-    // Helper: baca CSRF cookie
+    // ==========================================
+    // 3. HELPER FUNCTIONS
+    // ==========================================
     function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
-        return '';
+        return null;
     }
 
-    // Show/hide section
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function replaceUuid(pattern, id) {
+        return pattern.replace('00000000-0000-0000-0000-000000000000', id);
+    }
+
     function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
         loadingState.classList.toggle('hide', !showLoading);
         errorState.classList.toggle('hide', !showError);
@@ -120,76 +120,49 @@
         gridContainer.classList.toggle('hide', !showGrid);
     }
 
-    // Build card element
-    function buildArtworkCardElement(item) {
-        const artworkId = item.id;
+    function apiErrorMessage(data, status) {
+        const messages = Object.values(data).flat().filter(v => typeof v === 'string');
+        return messages.join(' ') || `Request failed (HTTP ${status})`;
+    }
 
-        const articleElement = document.createElement('article');
-        articleElement.className = 'creative-card';
+    // ==========================================
+    // 4. BUILD CARD HTML
+    // ==========================================
+    function buildArtworkCardElement(artwork) {
+        const article = document.createElement('article');
+        article.className = 'creative-card';
 
-        const imageHtml = item.image
-            ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="creative-image">`
+        const imageHtml = artwork.image
+            ? `<img src="${escapeHtml(artwork.image)}" alt="${escapeHtml(artwork.title)}" class="creative-image">`
             : '';
 
-        const descriptionHtml = item.description
-            ? `<p class="creative-description">${escapeHtml(item.description)}</p>`
+        const descHtml = artwork.description
+            ? `<p class="creative-description">${escapeHtml(artwork.description)}</p>`
             : '';
 
-        // URL pake dummy UUID, diganti sama ID asli
-        const editUrl = HAS_CHANGE_PERM
-            ? "{% url 'main:update_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId)
-            : '';
-        const deleteUrl = HAS_DELETE_PERM
-            ? "{% url 'main:delete_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId)
-            : '';
-        const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artworkId);
+        // Tombol Star (Kalo login)
+        const starHtml = IS_AUTHENTICATED
+            ? `<button type="button" class="button button-star${artwork.is_starred ? ' is-starred' : ''}" data-action="star" data-id="${escapeHtml(artwork.id)}" title="${escapeHtml(artwork.starred_by_names)}">
+                   <span aria-hidden="true">★</span> ${artwork.is_starred ? 'Unstar' : 'Star'} <span class="star-count">${artwork.star_count}</span>
+               </button>`
+            : `<a href="{% url 'main:login' %}" class="button button-star">Login to Star (${artwork.star_count})</a>`;
 
-        // Tombol Edit
+        // Tombol Edit & Delete
         const editHtml = HAS_CHANGE_PERM
-            ? `<a href="${editUrl}" class="button button-secondary">✏️ Edit</a>`
+            ? `<a href="{% url 'main:update_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artwork.id) class="button button-secondary">✏️ Edit</a>`
+            : '';
+            
+        const deleteHtml = HAS_DELETE_PERM
+            ? `<button type="button" class="button button-danger" data-action="delete" data-id="${escapeHtml(artwork.id)}">🗑️ Delete</button>`
             : '';
 
-        // Tombol Delete — modal inline
-        const deleteHtml = HAS_DELETE_PERM
-        ? `<button type="button" class="button button-danger" popovertarget="delete-modal-${artworkId}">🗑️ Delete</button>
-        <div id="delete-modal-${artworkId}" class="creativespace-delete-modal" popover="auto">
-            <div class="creativespace-delete-modal__content">
-                <button type="button" class="creativespace-delete-modal__close" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">×</button>
-                <h2>Delete Artwork</h2>
-                <p>Are you sure you want to delete <strong>${escapeHtml(item.title)}</strong>?</p>
-                <div class="creativespace-delete-modal__actions">
-                    <button type="button" class="button button-secondary" popovertarget="delete-modal-${artworkId}" popovertargetaction="hide">Cancel</button>
-                    <button type="button" class="button button-danger" data-delete-id="${artworkId}">Confirm</button>    <!-- ✅ BUTTON BIASA -->
-                </div>
-            </div>
-        </div>`
-        : '';
-
-        // Tombol Star
-        const isStarredClass = item.is_starred ? ' is-starred' : '';
-        const starText = item.is_starred ? 'Unstar' : 'Star';
-        const starTitle = item.star_count > 0
-            ? `Starred by ${escapeHtml(item.starred_by_names)}`
-            : 'GIVE IT A STAR!';
-
-        const starHtml = `
-            <form method="post" action="${starUrl}" class="star-form">
-                <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
-                <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
-                    <span aria-hidden="true">★</span>
-                    ${starText}
-                    <span class="star-count">${item.star_count}</span>
-                </button>
-            </form>
-        `;
-
-        articleElement.innerHTML = `
+        article.innerHTML = `
             ${imageHtml}
             <div class="creative-info">
-                <span class="creative-category">${escapeHtml(item.medium)}</span>
-                <h2>${escapeHtml(item.title)}</h2>
-                <p class="creative-artist">🎨 by ${escapeHtml(item.artist)}</p>
-                ${descriptionHtml}
+                <span class="creative-category">${escapeHtml(artwork.medium_display)}</span>
+                <h2>${escapeHtml(artwork.title)}</h2>
+                <p class="creative-artist">🎨 by ${escapeHtml(artwork.artist)}</p>
+                ${descHtml}
                 <div class="creative-actions">
                     ${starHtml}
                     ${editHtml}
@@ -197,158 +170,138 @@
                 </div>
             </div>
         `;
-
-        return articleElement;
+        return article;
     }
 
-    // HANDLE DELETE BUTTON CLICK
-    gridContainer.addEventListener('click', async function(e) {
-    const deleteBtn = e.target.closest('[data-delete-id]');
-    if (!deleteBtn) return;
-
-    const artworkId = deleteBtn.dataset.deleteId;
-
-    // Disable tombol biar gak double klik
-    deleteBtn.disabled = true;
-    deleteBtn.textContent = 'Deleting...';
-
-    try {
-        const deleteUrl = `/creative-space/${artworkId}/delete-ajax/`;
-        const response = await fetch(deleteUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showToast('Deleted!', data.message, 'success');
-            // Refresh grid tanpa reload
-            fetchCreativeSpaces(searchInput.value.trim());
-        } else {
-            showToast('Gagal', data.message || 'Gagal menghapus artwork', 'error');
-            deleteBtn.disabled = false;
-            deleteBtn.textContent = 'Confirm';
-        }
-    } catch (err) {
-        console.error('Delete error:', err);
-        showToast('Error', 'Terjadi kesalahan jaringan', 'error');
-        deleteBtn.disabled = false;
-        deleteBtn.textContent = 'Confirm';
-    }
-    });
-    // Fetch data
-    async function fetchCreativeSpaces(searchQuery = "") {
+    // ==========================================
+    // 5. FETCH DATA (GET)
+    // ==========================================
+    async function fetchCreativeSpaces(searchQuery = '') {
         if (abortController) abortController.abort();
         abortController = new AbortController();
 
         try {
             displayPageSection({ showLoading: true });
 
-            const url = searchQuery
-                ? `${BASE_CREATIVESPACE_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
-                : BASE_CREATIVESPACE_ENDPOINT;
+            const url = new URL(BASE_CREATIVESPACE_ENDPOINT, window.location.origin);
+            if (searchQuery) url.searchParams.set('title', searchQuery);
 
             const response = await fetch(url, {
                 headers: { 'Accept': 'application/json' },
                 signal: abortController.signal,
             });
 
-            if (!response.ok) throw new Error('Failed to fetch data');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const data = await response.json();
-
-            if (data.length === 0) {
-                displayPageSection({ showEmpty: true });
-            } else {
-                gridContainer.innerHTML = '';
-                data.forEach(item => {
-                    gridContainer.appendChild(buildArtworkCardElement(item));
-                });
-                displayPageSection({ showGrid: true });
-            }
+            
+            // Karena data dari DRF itu langsung array objek, bukan {fields: ...} lagi
+            gridContainer.replaceChildren(...data.map(buildArtworkCardElement));
+            displayPageSection({ showGrid: data.length > 0, showEmpty: data.length === 0 });
+            
         } catch (error) {
             if (error.name === 'AbortError') return;
-            console.error('Error loading creative spaces:', error);
+            console.error(error);
             displayPageSection({ showError: true });
         }
     }
 
-    // FORM SUBMIT AJAX
-    const addArtworkForm = document.getElementById('add-artwork-form');
+    // ==========================================
+    // 6. WRITE DATA (POST / PATCH / DELETE)
+    // ==========================================
+    async function writeData(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: payload === undefined ? undefined : JSON.stringify(payload),
+        });
+
+        if (response.status === 204) return null;
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+        return data;
+    }
+
+    // ==========================================
+    // 7. EVENT LISTENER: ADD FORM
+    // ==========================================
     if (addArtworkForm) {
         addArtworkForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            const submitBtn = addArtworkForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Saving...';
+            const btn = addArtworkForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
 
             try {
                 const formData = new FormData(addArtworkForm);
-                const response = await fetch("{% url 'main:create_creative_space_ajax' %}", {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                });
+                // Ambil data dari form jadi object
+                const payload = Object.fromEntries(['title', 'description', 'artist', 'medium', 'image'].map(name => [name, formData.get(name)]));
 
-                const data = await response.json();
+                await writeData(BASE_CREATIVESPACE_ENDPOINT, 'POST', payload);
 
-                if (response.ok) {
-                    // Tutup modal
-                    document.getElementById('add-creativespace-modal').hidePopover();
-                    addArtworkForm.reset();
-
-                    // Toast success
-                    showToast('Success!', data.message, 'success');
-
-                    // Refresh grid
-                    fetchCreativeSpaces(searchInput.value.trim());
-                } else {
-                    // Tampilin error validasi
-                    let errMsg = data.message || 'Validasi gagal';
-                    if (data.errors) {
-                        const firstErr = Object.values(data.errors)[0];
-                        if (Array.isArray(firstErr) && firstErr[0]?.message) {
-                            errMsg = firstErr[0].message;
-                        }
-                    }
-                    showToast('Gagal', errMsg, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error', 'Terjadi kesalahan jaringan', 'error');
+                addArtworkForm.reset();
+                document.getElementById('add-creativespace-modal').hidePopover();
+                showToast('Success!', 'Artwork berhasil ditambahkan!', 'success');
+                
+                fetchCreativeSpaces(searchInput.value.trim());
+            } catch (error) {
+                showToast('Gagal', error.message, 'error');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Add Artwork!';
+                btn.disabled = false;
+                btn.textContent = 'Add Artwork!';
             }
         });
     }
 
-    // Search dengan debounce
-    const SEARCH_DEBOUNCE_DELAY = 300;
+    // ==========================================
+    // 8. EVENT LISTENER: STAR & DELETE (Event Delegation)
+    // ==========================================
+    gridContainer.addEventListener('click', async function(e) {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn || btn.disabled) return;
 
-    function searchCreativeSpaces() {
-        clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(() => {
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+
+        if (action === 'delete' && !confirm('Yakin ingin menghapus artwork ini?')) return;
+        
+        btn.disabled = true;
+
+        try {
+            if (action === 'star') {
+                await writeData(replaceUuid(STAR_CREATIVESPACE_ENDPOINT, id), 'POST');
+                showToast('Success', 'Star berhasil diupdate!', 'success');
+            } else if (action === 'delete') {
+                await writeData(replaceUuid(DETAIL_CREATIVESPACE_ENDPOINT, id), 'DELETE');
+                showToast('Deleted!', 'Artwork berhasil dihapus.', 'success');
+            }
             fetchCreativeSpaces(searchInput.value.trim());
-        }, SEARCH_DEBOUNCE_DELAY);
-    }
+        } catch (error) {
+            showToast('Error', error.message, 'error');
+            btn.disabled = false;
+        }
+    });
 
-    // Event handlers
+    // ==========================================
+    // 9. EVENT LISTENER: SEARCH DEBOUNCE
+    // ==========================================
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => fetchCreativeSpaces(searchInput.value.trim()), 300);
+    });
+
     searchForm.addEventListener('submit', function(e) {
         e.preventDefault();
         clearTimeout(searchDebounceTimer);
         fetchCreativeSpaces(searchInput.value.trim());
     });
 
-    searchInput.addEventListener('input', searchCreativeSpaces);
-
-    // Start
+    // Start!
     fetchCreativeSpaces(searchInput.value.trim());
     </script>
 {% endblock content %}
