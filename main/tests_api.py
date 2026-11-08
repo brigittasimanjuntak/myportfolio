@@ -54,13 +54,13 @@ class CreativeSpaceAPITest(APITestCase):
 
     def test_visitor_and_guest_cannot_write(self):
         """Pengunjung dan user biasa gak bisa nambah/ngedit/hapus"""
-        for user in (None, self.visitor, self.editor): # Editor juga gak bisa nambah/hapus!
+        for user in (None, self.visitor, self.editor):
             self.client.force_authenticate(user=user)
-            
-            # Gak bisa nambah (Create)
             self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, status.HTTP_403_FORBIDDEN)
-            # Gak bisa hapus (Delete)
             self.assertEqual(self.client.delete(self.detail_url).status_code, status.HTTP_403_FORBIDDEN)
+
+        # Cek database gak bertambah
+        self.assertEqual(CreativeSpace.objects.count(), 1)
 
     def test_editor_can_update_but_not_delete(self):
         """Editor cuma bisa ngedit (PATCH/PUT)"""
@@ -131,3 +131,12 @@ class CreativeSpaceAPITest(APITestCase):
         
         response_empty = self.client.get(self.list_url, {"title": "TidakAda"})
         self.assertEqual(len(response_empty.data), 0)
+
+    def test_session_write_without_csrf_is_rejected(self):
+        """Test permintaan tanpa token CSRF ditolak"""
+        client = APIClient(enforce_csrf_checks=True) # Paksa ngecek CSRF
+        client.login(username="owner", password="test-password")
+
+        # POST tanpa CSRF (harus ditolak 403)
+        response = client.post(self.list_url, self.payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

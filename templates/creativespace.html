@@ -59,6 +59,50 @@
         {% if perms.main.add_creativespace %}
             {% include "components/creativespace_form_modal.html" %}
         {% endif %}
+        {% if perms.main.change_creativespace %}
+        <div id="edit-creativespace-modal" class="creativespace-delete-modal" popover="auto">
+            <button type="button" class="creativespace-delete-modal__backdrop" popovertarget="edit-creativespace-modal" popovertargetaction="hide"></button>
+            <div class="creativespace-delete-modal__content">
+                <button type="button" class="creativespace-delete-modal__close" popovertarget="edit-creativespace-modal" popovertargetaction="hide">×</button>
+                <h2>Edit Artwork</h2>
+                <form id="edit-artwork-form" class="creative-space-form">
+                    <input type="hidden" id="edit-artwork-id">
+                    <!-- Field disamain sama form Add, tapi tanpa {% csrf_token %} karena nanti pake header -->
+                    <div class="form-group">
+                        <label for="edit-title">Title</label>
+                        <input type="text" id="edit-title" name="title" required maxlength="255">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-description">Description</label>
+                        <textarea id="edit-description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-artist">Artist</label>
+                        <input type="text" id="edit-artist" name="artist">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-medium">Art Medium</label>
+                        <select id="edit-medium" name="medium">
+                            <option value="digital-art">Digital Art</option>
+                            <option value="traditional">Traditional Art</option>
+                            <option value="sketch">Sketch</option>
+                            <option value="3d-model">3D Model</option>
+                            <option value="photography">Photography</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-image">Artwork URL</label>
+                        <input type="url" id="edit-image" name="image">
+                    </div>
+                    <div class="creativespace-delete-modal__actions">
+                        <button type="button" class="button button-secondary" popovertarget="edit-creativespace-modal" popovertargetaction="hide">Cancel</button>
+                        <button type="submit" class="button">Save Changes</button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
     </main>
 
     {% csrf_token %} 
@@ -149,7 +193,7 @@
 
         // Tombol Edit & Delete
         const editHtml = HAS_CHANGE_PERM
-            ? `<a href="{% url 'main:update_creative_space' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', artwork.id) class="button button-secondary">✏️ Edit</a>`
+            ? `<button type="button" class="button button-secondary" data-action="edit" data-id="${escapeHtml(artwork.id)}" data-title="${escapeHtml(artwork.title)}" data-desc="${escapeHtml(artwork.description || '')}" data-artist="${escapeHtml(artwork.artist || '')}" data-medium="${escapeHtml(artwork.medium)}" data-image="${escapeHtml(artwork.image || '')}">✏️ Edit</button>`
             : '';
             
         const deleteHtml = HAS_DELETE_PERM
@@ -230,6 +274,35 @@
     // ==========================================
     // 7. EVENT LISTENER: ADD FORM
     // ==========================================
+    const editArtworkForm = document.getElementById('edit-artwork-form');
+    if (editArtworkForm) {
+        editArtworkForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = editArtworkForm.querySelector('button[type="submit"]');
+            const id = document.getElementById('edit-artwork-id').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const formData = new FormData(editArtworkForm);
+                const payload = Object.fromEntries(['title', 'description', 'artist', 'medium', 'image'].map(name => [name, formData.get(name)]));
+
+                await writeData(replaceUuid(DETAIL_CREATIVESPACE_ENDPOINT, id), 'PATCH', payload);
+
+                document.getElementById('edit-creativespace-modal').hidePopover();
+                showToast('Success!', 'Artwork berhasil diupdate!', 'success');
+
+                fetchCreativeSpaces(searchInput.value.trim());
+            } catch (error) {
+                showToast('Gagal Update', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+            }
+        });
+    }
+
     if (addArtworkForm) {
         addArtworkForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -267,6 +340,17 @@
 
         const action = btn.dataset.action;
         const id = btn.dataset.id;
+
+        if (action === 'edit') {
+            document.getElementById('edit-artwork-id').value = id;
+            document.getElementById('edit-title').value = btn.dataset.title;
+            document.getElementById('edit-description').value = btn.dataset.desc;
+            document.getElementById('edit-artist').value = btn.dataset.artist;
+            document.getElementById('edit-medium').value = btn.dataset.medium;
+            document.getElementById('edit-image').value = btn.dataset.image;
+            document.getElementById('edit-creativespace-modal').showPopover();
+            return;
+        }
 
         if (action === 'delete' && !confirm('Yakin ingin menghapus artwork ini?')) return;
         
